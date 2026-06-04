@@ -165,8 +165,10 @@ public class StreamApiTasks {
     }
 
     static DoubleSummaryStatistics activeOrderStatistics(List<Order> orders) {
-        // TODO: zadanie dodatkowe
-        return new DoubleSummaryStatistics();
+        return orders.stream()
+                .filter(order -> order.status() != OrderStatus.CANCELLED)
+                .mapToDouble(Order::totalValue)
+                .summaryStatistics();
     }
 
     public static void main(String[] args) {
@@ -185,4 +187,30 @@ public class StreamApiTasks {
         System.out.println(mostExpensiveDeliveredOrder(orders).map(Order::id).orElse("brak"));
         System.out.println(activeOrderStatistics(orders));
     }
+
+    /*1. Dlaczego average() zwraca OptionalDouble, a sum() zwraca double?
+    Suma pustej listy to po prostu zero.
+    Ale średnia pustej listy to dzielenie przez zero, co jest błędem. OptionalDouble zabezpiecza nas
+
+    2. Czym różni się map od flatMap w zadaniu 4?
+    map zostawiłby nam strumień list (listy zamówień).
+    flatMap bierze te listy, rozpakowuje je i wysypuje wszystko do jednego,
+    płaskiego strumienia pojedynczych produktów.
+
+
+    3. Dlaczego w zad. 9 po collect() trzeba użyć entrySet().stream()?
+    Bo collect() zamknął strumień i wypluł nam Mapę. Mapa nie ma funkcji do sortowania (.sorted()).
+    Żeby znowu sortować, trzeba z tej mapy wyciągnąć pary klucz-wartość (entrySet()) i otworzyć na
+    nich nowy strumień.
+
+    4. Co się stanie po odpaleniu kodu z dwoma terminalnymi operacjami (count() i sum())?
+    Wyskoczy błąd, strumienie są jednorazowe. Jeśli użyje się na strumieniu operacji końcowej (jak count),
+    to strumień się zamyknie. Nie można z tej samej zmiennej liczyć już sumy.
+
+    5. Dlaczego potok z samym filter i map nic nie wypisze?
+    Bo strumienie są "leniwe". Zapisują sobie tylko, co mają
+    zrobić, ale nie ruszają do pracy, dopóki na końcu nie wymusi się
+    akcji jakąś operacją końcową (np. .toList() albo .count()).
+    */
 }
+
