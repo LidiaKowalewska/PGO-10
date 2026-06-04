@@ -127,23 +127,41 @@ public class StreamApiTasks {
     }
 
     static Map<String, Double> revenueByCategory(List<Order> orders) {
-        // TODO: zadanie 8
-        return Map.of();
+        return orders.stream()
+                .filter(order -> order.status() != OrderStatus.CANCELLED)
+                .flatMap(order -> order.items().stream())
+                .collect(Collectors.groupingBy(
+                        item -> item.product().category(),
+                        Collectors.summingDouble(OrderItem::totalPrice)
+                ));
     }
 
     static Map<String, Double> topCustomers(List<Order> orders, int limit) {
-        // TODO: zadanie 9
-        return Map.of();
+        return orders.stream()
+                .filter(order -> order.status() != OrderStatus.CANCELLED)
+                .collect(Collectors.groupingBy(Order::customerName, Collectors.summingDouble(Order::totalValue)))
+                .entrySet()
+                .stream()
+                .sorted(Map.Entry.<String, Double>comparingByValue().reversed())
+                .limit(limit)
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
+                        (e1, e2) -> e1, // Rozwiązywanie konfliktów (tu nie wystąpi, ale API tego wymaga)
+                        LinkedHashMap::new // LinkedHashMap zachowuje kolejność wstawiania (czyli nasze sortowanie)
+                ));
     }
 
     static Map<Boolean, List<Order>> partitionActiveOrdersByValue(List<Order> orders, double threshold) {
-        // TODO: zadanie 10
-        return Map.of();
+        return orders.stream()
+                .filter(order -> order.status() != OrderStatus.CANCELLED)
+                .collect(Collectors.partitioningBy(order -> order.totalValue() >= threshold));
     }
 
     static Optional<Order> mostExpensiveDeliveredOrder(List<Order> orders) {
-        // TODO: zadanie 11
-        return Optional.empty();
+        return orders.stream()
+                .filter(order -> order.status() == OrderStatus.DELIVERED)
+                .max(Comparator.comparingDouble(Order::totalValue));
     }
 
     static DoubleSummaryStatistics activeOrderStatistics(List<Order> orders) {
